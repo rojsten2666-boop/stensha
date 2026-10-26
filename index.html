@@ -1,0 +1,1366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Currency Pulse Pro Analysis Tool</title>
+  <style>
+    :root{
+      --bg:#f5f2ff;
+      --panel:#ffffff;
+      --panel-alt:#f8f7ff;
+      --stroke:#eae3ff;
+      --text:#1f2430;
+      --muted:#65708a;
+      --green:#1dbf73;
+      --green-soft:#e8fff5;
+      --red:#e74c3c;
+      --red-soft:#fff1f0;
+      --blue:#4d6cff;
+      --blue-soft:#edf2ff;
+      --purple:#7c57ff;
+      --purple-soft:#f2ebff;
+      --warning:#f5a623;
+      --shadow: 0 10px 24px rgba(110,96,200,.12);
+      --radius:16px;
+    }
+
+    * { box-sizing: border-box; }
+    html,body { margin:0; padding:0; background:var(--bg); color:var(--text); font-family: Inter, "Segoe UI", Arial, sans-serif; }
+    body { min-height:100vh; }
+    button, input, select { font: inherit; }
+    .shell {
+      max-width: 1460px;
+      margin: 18px auto;
+      padding: 18px;
+    }
+
+    .topbar {
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:16px;
+      flex-wrap:wrap;
+      margin-bottom:16px;
+    }
+
+    .title-wrap {
+      display:flex;
+      align-items:center;
+      gap:14px;
+      flex-wrap:wrap;
+    }
+
+    .brand-mark {
+      width:42px; height:42px; border-radius:12px;
+      background:linear-gradient(135deg,var(--purple),var(--blue));
+      color:white; display:grid; place-items:center; font-weight:800;
+      box-shadow: var(--shadow);
+    }
+
+    h1 {
+      font-size: clamp(1.5rem, 2vw, 2.2rem);
+      margin:0;
+      letter-spacing:-0.04em;
+    }
+
+    .subhead {
+      color: var(--muted); font-size:.82rem; margin-top:2px;
+    }
+
+    .toolbar {
+      display:flex; flex-wrap:wrap; gap:10px; align-items:center;
+    }
+
+    .btn {
+      border:none; border-radius:12px; padding:10px 16px; font-weight:700;
+      cursor:pointer; transition:.2s ease; box-shadow: 0 6px 14px rgba(103,80,200,.08);
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn.primary { background: linear-gradient(135deg, #32cc7b, #19a95d); color:#fff; }
+    .btn.danger { background: linear-gradient(135deg,#ff6a5d,#db3e43); color:#fff; }
+    .btn.secondary { background: #eef1ff; color: var(--text); }
+    .btn.ghost { background:#fff; border:1px solid var(--stroke); color:var(--text); }
+
+    .status-strip {
+      display:grid; grid-template-columns: repeat(5, minmax(140px, 1fr));
+      gap:12px;
+      margin: 14px 0 18px;
+    }
+
+    .mini-card {
+      background:var(--panel); border:1px solid var(--stroke); border-radius:14px;
+      padding:12px 14px; box-shadow: var(--shadow);
+    }
+    .mini-label {
+      display:block; color: var(--muted); font-size: 0.72rem; text-transform: uppercase; letter-spacing: .08em; margin-bottom:6px;
+    }
+    .mini-value {
+      font-weight:800; font-size:1.05rem; letter-spacing: -.02em;
+    }
+    .good { color: var(--green); }
+    .bad { color: var(--red); }
+    .warn { color: var(--warning); }
+    .blue { color: var(--blue); }
+
+    .layout {
+      display:grid;
+      grid-template-columns: 430px 1fr;
+      gap:18px;
+    }
+
+    .panel {
+      background: var(--panel);
+      border:1px solid var(--stroke);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding:16px;
+    }
+
+    .panel h3 {
+      margin:0 0 14px; font-size: 1.08rem; letter-spacing:-0.02em;
+    }
+
+    .section-label {
+      display:block; font-weight:700; margin:10px 0 7px; font-size: .8rem; color: var(--muted); text-transform: uppercase; letter-spacing: .08em;
+    }
+
+    .market-search {
+      width:100%; border:1px solid var(--stroke); background:#fbfaff; border-radius:10px;
+      padding:10px 12px; outline:none; margin-bottom:10px;
+    }
+    .market-search:focus { border-color: var(--purple); box-shadow: 0 0 0 3px rgba(124,87,255,.12); }
+
+    .market-list {
+      display:grid; gap:8px; max-height: 360px; overflow:auto; padding-right:4px;
+    }
+
+    .market-item {
+      width:100%; text-align:left; border:1px solid var(--stroke); background:var(--panel-alt); border-radius:12px;
+      padding:10px 12px; cursor:pointer; display:flex; justify-content:space-between; gap:10px; align-items:center;
+      transition:.15s ease;
+    }
+    .market-item:hover { border-color: rgba(124,87,255,.4); background:#f6f1ff; }
+    .market-item.active {
+      border-color: rgba(124,87,255,.7); background: linear-gradient(135deg, rgba(124,87,255,.12), rgba(77,108,255,.08));
+    }
+
+    .market-name { font-weight:700; }
+    .market-symbol { font-size: 0.75rem; color: var(--muted); }
+    .market-status {
+      font-size: 0.7rem; padding: 4px 8px; border-radius: 999px; font-weight:800; background:#f2f5ff; color:var(--blue);
+    }
+    .market-status.live { background: var(--green-soft); color: var(--green); }
+    .market-status.stale { background: #fff3df; color: var(--warning); }
+    .market-status.offline { background: #fff0f0; color: var(--red); }
+
+    .control-grid {
+      display:grid; grid-template-columns: 1fr 1fr; gap:14px;
+      margin-top:12px;
+    }
+
+    .field {
+      display:flex; flex-direction:column; gap:7px;
+    }
+    .field label { color: var(--muted); font-size: .75rem; text-transform: uppercase; letter-spacing: .08em; font-weight:700; }
+    .field input, .field select {
+      border:1px solid var(--stroke); background:#fbfaff; border-radius:10px; width:100%;
+      padding:10px 12px; outline:none;
+    }
+    .field input:focus, .field select:focus {
+      border-color: var(--purple); box-shadow: 0 0 0 3px rgba(124,87,255,.12);
+    }
+
+    .scan-box {
+      margin-top:18px;
+      background:linear-gradient(135deg,#ffffff,#f6f2ff);
+      border:1px solid var(--stroke); border-radius:16px; padding:16px;
+    }
+
+    .scan-top {
+      display:flex; justify-content:space-between; gap:10px; align-items:center; margin-bottom: 12px;
+    }
+
+    .scan-counter {
+      font-size: 2.2rem; font-weight:900; letter-spacing:-0.06em; color: var(--purple);
+    }
+
+    .scan-meta {
+      display:flex; flex-wrap:wrap; gap:10px; font-size: .82rem; color: var(--muted);
+    }
+
+    .progress {
+      height: 12px; background: #eef1ff; border-radius:999px; overflow:hidden; position:relative; border:1px solid #e3e7ff;
+    }
+    .progress-bar {
+      height:100%; width:0%; background: linear-gradient(90deg, var(--green), var(--blue), var(--purple)); border-radius:inherit; transition:.25s ease;
+    }
+
+    .results-panel {
+      display:grid; grid-template-columns: 1.2fr .8fr; gap:18px;
+      margin-top:18px;
+    }
+
+    .result-card {
+      background:linear-gradient(180deg,#fff,#faf8ff); border:1px solid var(--stroke); border-radius:16px; padding:16px;
+    }
+
+    .result-row {
+      display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid #f0edff;
+    }
+    .result-row:last-child { border-bottom:none; }
+    .result-row .k { color: var(--muted); font-weight:700; }
+    .result-row .v { font-weight:800; }
+    .result-row .signal {
+      padding: 6px 10px; border-radius: 999px; font-weight:800; font-size: .7rem; text-transform: uppercase; letter-spacing: .08em;
+    }
+    .signal.wait { background:#eef1ff; color:var(--blue); }
+    .signal.scanning { background:#ecfbf3; color:var(--green); }
+    .signal.candidate { background:#fff3df; color:var(--warning); }
+    .signal.stale { background:#fff0f0; color:var(--red); }
+    .signal.disconnected { background:#f3f4f9; color:#6a7285; }
+
+    .confidence {
+      font-size:2.1rem; font-weight:900; letter-spacing:-0.06em; color: var(--green);
+    }
+
+    .table-wrap {
+      margin-top: 18px;
+      background: var(--panel);
+      border:1px solid var(--stroke);
+      border-radius: 16px;
+      padding: 6px 0;
+      overflow:auto;
+    }
+
+    table {
+      width:100%; border-collapse:collapse; font-size:0.92rem;
+    }
+    th, td {
+      padding:10px 12px; border-bottom:1px solid #f0ecff; text-align:left;
+    }
+    th { color: var(--muted); font-size: .7rem; text-transform: uppercase; letter-spacing:.08em; font-weight:800; background:#faf8ff; }
+    tr:last-child td { border-bottom:none; }
+
+    .digit-bars {
+      display:grid; grid-template-columns: repeat(10, minmax(0, 1fr)); gap:8px; align-items:end; min-height: 165px;
+      margin-top: 18px;
+      background:linear-gradient(180deg,#fff,#f9f7ff); border:1px solid var(--stroke); border-radius:16px; padding:18px 12px 10px;
+    }
+    .bar-wrap {
+      display:flex; flex-direction:column; align-items:center; gap:8px; height:100%;
+    }
+    .bar {
+      width:100%; min-height:10px; border-radius:10px 10px 2px 2px;
+      background: linear-gradient(180deg, #8d6bff 0%, #4d6cff 100%);
+      box-shadow: inset 0 -8px 12px rgba(255,255,255,.2);
+      transition: height .2s ease;
+      position:relative;
+    }
+    .bar .label {
+      font-size: 0.7rem; color: var(--muted); font-weight:700;
+    }
+    .bar .value {
+      position:absolute; top:-20px; left:50%; transform:translateX(-50%);
+      font-size:0.68rem; font-weight:800; color:var(--text);
+    }
+
+    .muted { color: var(--muted); }
+    .small { font-size:.82rem; }
+    .tiny { font-size:.7rem; }
+
+    @media (max-width: 980px) {
+      .layout { grid-template-columns: 1fr; }
+      .status-strip { grid-template-columns: repeat(2, minmax(140px, 1fr)); }
+      .results-panel { grid-template-columns: 1fr; }
+      .control-grid { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 560px) {
+      .shell { padding: 12px; }
+      .status-strip { grid-template-columns: 1fr; }
+      .toolbar { display:grid; grid-template-columns: 1fr 1fr; }
+      .btn { width:100%; }
+      .topbar { align-items:flex-start; }
+      .scan-counter { font-size:1.8rem; }
+      .market-list { max-height: 280px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <div class="topbar">
+      <div class="title-wrap">
+        <div class="brand-mark">CP</div>
+        <div>
+          <h1>Currency Pulse Pro Analysis Tool</h1>
+          <div class="subhead">Deriv live synthetic market digit analyzer</div>
+        </div>
+      </div>
+      <div class="toolbar">
+        <button id="connectBtn" class="btn primary">Connect</button>
+        <button id="refreshBtn" class="btn secondary">Refresh Markets</button>
+        <button id="startBtn" class="btn primary">Start Analysis</button>
+        <button id="stopBtn" class="btn danger">Stop Analysis</button>
+      </div>
+    </div>
+
+    <div class="status-strip">
+      <div class="mini-card">
+        <span class="mini-label">Connection</span>
+        <div class="mini-value" id="connectionState">DISCONNECTED</div>
+      </div>
+      <div class="mini-card">
+        <span class="mini-label">Market</span>
+        <div class="mini-value blue" id="selectedMarketLabel">—</div>
+      </div>
+      <div class="mini-card">
+        <span class="mini-label">Data</span>
+        <div class="mini-value" id="dataState">WAIT</div>
+      </div>
+      <div class="mini-card">
+        <span class="mini-label">Ticks</span>
+        <div class="mini-value" id="tickCountLabel">0</div>
+      </div>
+      <div class="mini-card">
+        <span class="mini-label">Latest Price</span>
+        <div class="mini-value" id="latestPriceLabel">—</div>
+      </div>
+    </div>
+
+    <div class="layout">
+      <section class="panel">
+        <h3>Market Selection</h3>
+
+        <div class="section-label">Search Markets</div>
+        <input id="marketSearch" class="market-search" type="text" placeholder="Search volatility / synthetic index" />
+
+        <div class="section-label">Available Symbols</div>
+        <div id="marketList" class="market-list"></div>
+
+        <div class="section-label">Controls</div>
+        <div class="control-grid">
+          <div class="field">
+            <label>Selected Market</label>
+            <input id="selectedSymbolInput" type="text" readonly value="No market selected" />
+          </div>
+          <div class="field">
+            <label>Refresh</label>
+            <button id="refreshSymbolBtn" class="btn ghost" style="width:100%;">Refresh Markets</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h3>Strategy Settings</h3>
+        <div class="control-grid">
+          <div class="field">
+            <label>Analysis Mode</label>
+            <select id="analysisMode">
+              <option value="MATCHES">Matches</option>
+              <option value="DIFFERS">Differs</option>
+              <option value="OVER">Over</option>
+              <option value="UNDER">Under</option>
+              <option value="ODD">Odd</option>
+              <option value="EVEN">Even</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Digit Barrier</label>
+            <input id="digitBarrier" type="number" min="0" max="9" value="5" />
+          </div>
+          <div class="field">
+            <label>Historical Sample</label>
+            <select id="sampleSize">
+              <option value="100">100</option>
+              <option value="250">250</option>
+              <option value="500" selected>500</option>
+              <option value="1000">1000</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Minimum Observations</label>
+            <input id="minObservations" type="number" min="5" max="200" value="20" />
+          </div>
+          <div class="field">
+            <label>Recent Window</label>
+            <input id="recentWindow" type="number" min="10" max="200" value="60" />
+          </div>
+          <div class="field">
+            <label>Signal Threshold (%)</label>
+            <input id="signalThreshold" type="number" min="0" max="99" value="62" />
+          </div>
+          <div class="field">
+            <label>Deviation Threshold</label>
+            <input id="deviationThreshold" type="number" min="0.01" max="0.9" step="0.01" value="0.18" />
+          </div>
+          <div class="field">
+            <label>Streak Detection</label>
+            <input id="streakThreshold" type="number" min="2" max="20" value="4" />
+          </div>
+          <div class="field">
+            <label>Refresh Max Age (ms)</label>
+            <input id="maxAgeMs" type="number" min="1000" max="60000" value="8000" />
+          </div>
+          <div class="field">
+            <label>Cooldown (ms)</label>
+            <input id="cooldownMs" type="number" min="0" max="30000" value="3000" />
+          </div>
+          <div class="field">
+            <label>Notifications</label>
+            <select id="notificationsToggle">
+              <option value="off">Off</option>
+              <option value="on">On</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Sound Alerts</label>
+            <select id="soundToggle">
+              <option value="off">Off</option>
+              <option value="on">On</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="scan-box">
+          <div class="scan-top">
+            <div>
+              <div class="tiny muted">Scan Counter</div>
+              <div class="scan-counter" id="scanCounter">0</div>
+            </div>
+            <div class="tiny muted">Last scan: <span id="lastScanTime">—</span></div>
+          </div>
+          <div class="scan-meta">
+            <span>Symbol: <strong id="scanSymbol">—</strong></span>
+            <span>Mode: <strong id="scanMode">MATCHES</strong></span>
+            <span>Samples: <strong id="scanSampleCount">0</strong></span>
+          </div>
+          <div style="margin-top:14px;">
+            <div class="progress">
+              <div id="scanProgressBar" class="progress-bar"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <div class="results-panel">
+      <div class="result-card">
+        <h3>Matches / Differs Analysis</h3>
+
+        <div class="result-row">
+          <div class="k">Market</div>
+          <div class="v" id="marketResult">—</div>
+        </div>
+        <div class="result-row">
+          <div class="k">Contract</div>
+          <div class="v" id="contractResult">MATCHES</div>
+        </div>
+        <div class="result-row">
+          <div class="k">Predicted Match Digit</div>
+          <div class="v confidence" id="predictedDigit">—</div>
+        </div>
+        <div class="result-row">
+          <div class="k">Recommended Run Digit</div>
+          <div class="v" id="recommendedDigit">—</div>
+        </div>
+        <div class="result-row">
+          <div class="k">Confidence</div>
+          <div class="v" id="confidenceValue">0%</div>
+        </div>
+        <div class="result-row">
+          <div class="k">Signal Status</div>
+          <div class="v"><span id="signalBadge" class="signal wait">WAIT</span></div>
+        </div>
+        <div class="result-row">
+          <div class="k">Reason</div>
+          <div class="v small" id="signalReason">Waiting for sufficient data...</div>
+        </div>
+      </div>
+
+      <div class="result-card">
+        <h3>Tick Statistics</h3>
+
+        <div class="result-row">
+          <div class="k">Latest Quote</div>
+          <div class="v" id="latestQuoteValue">—</div>
+        </div>
+        <div class="result-row">
+          <div class="k">Last Digit</div>
+          <div class="v" id="lastDigitValue">—</div>
+        </div>
+        <div class="result-row">
+          <div class="k">Tick Count</div>
+          <div class="v" id="tickStatsCount">0</div>
+        </div>
+        <div class="result-row">
+          <div class="k">Time</div>
+          <div class="v small" id="tickTimeValue">—</div>
+        </div>
+        <div class="result-row">
+          <div class="k">Sample Size</div>
+          <div class="v" id="sampleSizeValue">0</div>
+        </div>
+        <div class="result-row">
+          <div class="k">Last Analysis</div>
+          <div class="v small" id="analysisTimeValue">—</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel" style="margin-top:18px;">
+      <h3>Digit Distribution</h3>
+      <div id="digitBars" class="digit-bars"></div>
+    </div>
+
+    <div class="panel" style="margin-top:18px;">
+      <h3>Recent Analysis History</h3>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Time</th>
+              <th>Market</th>
+              <th>Mode</th>
+              <th>Candidate</th>
+              <th>Confidence</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="historyTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="panel" style="margin-top:18px;">
+      <h3>Digit Frequency Table</h3>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Digit</th>
+              <th>Count</th>
+              <th>Frequency</th>
+              <th>Deviation</th>
+            </tr>
+          </thead>
+          <tbody id="digitTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="panel" style="margin-top:18px;">
+      <h3>Recent Sequence</h3>
+      <div class="small muted" id="recentSequenceBox">No data</div>
+    </div>
+
+    <div class="toolbar" style="margin-top:18px;">
+      <button id="csvBtn" class="btn secondary">Export CSV</button>
+      <button id="clearHistoryBtn" class="btn ghost">Clear History</button>
+      <button id="pauseResumeBtn" class="btn ghost">Pause Analysis</button>
+    </div>
+  </div>
+
+  <script>
+    (function(){
+      const state = {
+        ws: null,
+        appId: 1089,
+        activeSymbols: [],
+        selectedSymbol: '',
+        selectedName: '',
+        currentMode: 'MATCHES',
+        connected: false,
+        analysisRunning: false,
+        paused: false,
+        scanCounter: 0,
+        lastTick: null,
+        lastTickEpoch: null,
+        tickCount: 0,
+        historyDigits: [],
+        historyLog: [],
+        lastAlertTs: 0,
+        lastAnalysisTs: null,
+        currentConfig: {
+          sampleSize: 500,
+          minObservations: 20,
+          recentWindow: 60,
+          signalThreshold: 62,
+          deviationThreshold: 0.18,
+          streakThreshold: 4,
+          maxAgeMs: 8000,
+          cooldownMs: 3000,
+          notifications: false,
+          sound: false
+        },
+        lastSignal: null,
+        requestId: 0,
+        subscribed: false,
+        lastStatus: 'DISCONNECTED'
+      };
+
+      const elements = {
+        connectionState: document.getElementById('connectionState'),
+        selectedMarketLabel: document.getElementById('selectedMarketLabel'),
+        dataState: document.getElementById('dataState'),
+        tickCountLabel: document.getElementById('tickCountLabel'),
+        latestPriceLabel: document.getElementById('latestPriceLabel'),
+        marketList: document.getElementById('marketList'),
+        marketSearch: document.getElementById('marketSearch'),
+        selectedSymbolInput: document.getElementById('selectedSymbolInput'),
+        analysisMode: document.getElementById('analysisMode'),
+        digitBarrier: document.getElementById('digitBarrier'),
+        sampleSize: document.getElementById('sampleSize'),
+        minObservations: document.getElementById('minObservations'),
+        recentWindow: document.getElementById('recentWindow'),
+        signalThreshold: document.getElementById('signalThreshold'),
+        deviationThreshold: document.getElementById('deviationThreshold'),
+        streakThreshold: document.getElementById('streakThreshold'),
+        maxAgeMs: document.getElementById('maxAgeMs'),
+        cooldownMs: document.getElementById('cooldownMs'),
+        notificationsToggle: document.getElementById('notificationsToggle'),
+        soundToggle: document.getElementById('soundToggle'),
+        scanCounter: document.getElementById('scanCounter'),
+        lastScanTime: document.getElementById('lastScanTime'),
+        scanSymbol: document.getElementById('scanSymbol'),
+        scanMode: document.getElementById('scanMode'),
+        scanSampleCount: document.getElementById('scanSampleCount'),
+        scanProgressBar: document.getElementById('scanProgressBar'),
+        predictedDigit: document.getElementById('predictedDigit'),
+        recommendedDigit: document.getElementById('recommendedDigit'),
+        confidenceValue: document.getElementById('confidenceValue'),
+        signalBadge: document.getElementById('signalBadge'),
+        signalReason: document.getElementById('signalReason'),
+        marketResult: document.getElementById('marketResult'),
+        contractResult: document.getElementById('contractResult'),
+        latestQuoteValue: document.getElementById('latestQuoteValue'),
+        lastDigitValue: document.getElementById('lastDigitValue'),
+        tickStatsCount: document.getElementById('tickStatsCount'),
+        tickTimeValue: document.getElementById('tickTimeValue'),
+        sampleSizeValue: document.getElementById('sampleSizeValue'),
+        analysisTimeValue: document.getElementById('analysisTimeValue'),
+        digitTableBody: document.getElementById('digitTableBody'),
+        historyTableBody: document.getElementById('historyTableBody'),
+        digitBars: document.getElementById('digitBars'),
+        recentSequenceBox: document.getElementById('recentSequenceBox'),
+        csvBtn: document.getElementById('csvBtn'),
+        clearHistoryBtn: document.getElementById('clearHistoryBtn'),
+        pauseResumeBtn: document.getElementById('pauseResumeBtn'),
+        connectBtn: document.getElementById('connectBtn'),
+        startBtn: document.getElementById('startBtn'),
+        stopBtn: document.getElementById('stopBtn'),
+        refreshBtn: document.getElementById('refreshBtn'),
+        refreshSymbolBtn: document.getElementById('refreshSymbolBtn'),
+      };
+
+      const wsUrl = `wss://ws.deriv.com/websockets/v3?app_id=${state.appId}`;
+
+      function setConnectionStatus(status) {
+        state.lastStatus = status;
+        elements.connectionState.textContent = status;
+        elements.connectionState.className = 'mini-value';
+        if (status === 'CONNECTED') elements.connectionState.classList.add('good');
+        else if (status === 'CONNECTING') elements.connectionState.classList.add('blue');
+        else if (status === 'SCANNING') elements.connectionState.classList.add('good');
+        else if (status === 'DATA STALE' || status === 'ERROR') elements.connectionState.classList.add('warn');
+        else if (status === 'DISCONNECTED') elements.connectionState.classList.add('bad');
+      }
+
+      function setDataStatus(status) {
+        elements.dataState.textContent = status;
+        elements.dataState.className = 'mini-value';
+        if (status === 'SCANNING') elements.dataState.classList.add('good');
+        else if (status === 'DATA STALE') elements.dataState.classList.add('warn');
+        else if (status === 'WAIT' || status === 'DISCONNECTED') elements.dataState.classList.add('bad');
+        else if (status === 'CONNECTED') elements.dataState.classList.add('blue');
+      }
+
+      function updateConfigFromInputs(){
+        state.currentConfig.sampleSize = Number(elements.sampleSize.value) || 500;
+        state.currentConfig.minObservations = Number(elements.minObservations.value) || 20;
+        state.currentConfig.recentWindow = Number(elements.recentWindow.value) || 60;
+        state.currentConfig.signalThreshold = Number(elements.signalThreshold.value) || 62;
+        state.currentConfig.deviationThreshold = Number(elements.deviationThreshold.value) || 0.18;
+        state.currentConfig.streakThreshold = Number(elements.streakThreshold.value) || 4;
+        state.currentConfig.maxAgeMs = Number(elements.maxAgeMs.value) || 8000;
+        state.currentConfig.cooldownMs = Number(elements.cooldownMs.value) || 3000;
+        state.currentConfig.notifications = elements.notificationsToggle.value === 'on';
+        state.currentConfig.sound = elements.soundToggle.value === 'on';
+        state.currentMode = elements.analysisMode.value;
+        elements.scanMode.textContent = state.currentMode;
+      }
+
+      function connectSocket() {
+        if (state.ws && (state.ws.readyState === WebSocket.OPEN || state.ws.readyState === WebSocket.CONNECTING)) {
+          return;
+        }
+
+        setConnectionStatus('CONNECTING');
+        setDataStatus('CONNECTED');
+        state.ws = new WebSocket(wsUrl);
+
+        state.ws.onopen = () => {
+          state.connected = true;
+          setConnectionStatus('CONNECTED');
+          setDataStatus('WAIT');
+          refreshMarkets();
+          if (state.selectedSymbol) {
+            subscribeToSymbol(state.selectedSymbol);
+          }
+        };
+
+        state.ws.onmessage = (event) => {
+          let msg;
+          try { msg = JSON.parse(event.data); }
+          catch (e) { console.error('Invalid WS message:', e); return; }
+
+          if (msg.error) {
+            console.error('WebSocket error:', msg.error);
+            setConnectionStatus('ERROR');
+            setDataStatus('WAIT');
+            updateSignal('WAIT', `WebSocket error: ${msg.error.message || 'unknown error'}`);
+            return;
+          }
+
+          if (!msg) return;
+
+          if (msg.msg_type === 'active_symbols') {
+            if (msg.active_symbols && Array.isArray(msg.active_symbols)) {
+              state.activeSymbols = msg.active_symbols;
+              renderMarketList();
+            }
+            return;
+          }
+
+          if (msg.msg_type === 'history') {
+            handleHistoryMessage(msg);
+            return;
+          }
+
+          if (msg.msg_type === 'tick') {
+            handleTickMessage(msg);
+            return;
+          }
+        };
+
+        state.ws.onerror = () => {
+          setConnectionStatus('ERROR');
+          setDataStatus('DISCONNECTED');
+          updateSignal('WAIT', 'WebSocket connection error. Retrying or reconnecting...');
+        };
+
+        state.ws.onclose = () => {
+          state.connected = false;
+          setConnectionStatus('DISCONNECTED');
+          if (state.analysisRunning) {
+            setDataStatus('DATA STALE');
+            updateSignal('DISCONNECTED', 'Connection lost while analysis was running.');
+          } else {
+            setDataStatus('WAIT');
+          }
+        };
+      }
+
+      function sendWsRequest(payload) {
+        if (!state.ws || state.ws.readyState !== WebSocket.OPEN) {
+          console.warn('Socket not ready; request dropped', payload);
+          return null;
+        }
+        const requestId = ++state.requestId;
+        const finalPayload = Object.assign({ id: requestId }, payload);
+        state.ws.send(JSON.stringify(finalPayload));
+        return requestId;
+      }
+
+      function fetchActiveSymbols() {
+        sendWsRequest({ method: 'active_symbols', params: { product_type: 'basic' } });
+      }
+
+      function refreshMarkets() {
+        fetchActiveSymbols();
+      }
+
+      function filterMarketCandidates(symbolData) {
+        const list = Array.isArray(symbolData) ? symbolData : [];
+        return list.filter(item => {
+          const symbol = String(item.symbol || '');
+          const display = String(item.display_name || item.name || '');
+          const market = String(item.market || '');
+          const tags = `${symbol} ${display} ${market}`.toLowerCase();
+
+          const isSynthetic = market.toLowerCase().includes('synthetic') || symbol.includes('R_') || /volatility|vol/i.test(display) || /volatility|vol/i.test(symbol) || /volatility|vol/i.test(tags);
+
+          return isSynthetic && (symbol || display);
+        }).sort((a,b)=> (a.display_name || a.symbol).localeCompare(b.display_name || b.symbol));
+      }
+
+      function renderMarketList() {
+        const search = elements.marketSearch.value.trim().toLowerCase();
+        const filtered = filterMarketCandidates(state.activeSymbols).filter(item => {
+          const text = `${item.display_name || item.name || ''} ${item.symbol || ''}`.toLowerCase();
+          return text.includes(search);
+        });
+
+        elements.marketList.innerHTML = '';
+
+        if (!filtered.length) {
+          elements.marketList.innerHTML = '<div class="small muted">No volatility or synthetic symbols loaded yet.</div>';
+          return;
+        }
+
+        filtered.slice(0, 80).forEach(item => {
+          const symbol = item.symbol || '';
+          const display = item.display_name || item.name || symbol;
+          const row = document.createElement('button');
+          row.className = 'market-item' + (symbol === state.selectedSymbol ? ' active' : '');
+          row.type = 'button';
+
+          row.innerHTML = `
+            <div>
+              <div class="market-name">${display}</div>
+              <div class="market-symbol">${symbol}</div>
+            </div>
+            <div class="market-status ${state.selectedSymbol === symbol ? 'live' : 'offline'}">
+              ${state.selectedSymbol === symbol ? 'Selected' : 'Ready'}
+            </div>
+          `;
+
+          row.addEventListener('click', () => {
+            state.selectedSymbol = symbol;
+            state.selectedName = display;
+            elements.selectedSymbolInput.value = symbol;
+            elements.selectedMarketLabel.textContent = `${display} (${symbol})`;
+            if (state.connected) {
+              subscribeToSymbol(symbol);
+            }
+            renderMarketList();
+            loadHistoricalTicks(symbol, Number(elements.sampleSize.value) || 500);
+          });
+
+          elements.marketList.appendChild(row);
+        });
+      }
+
+      function getDigitFromQuote(quote) {
+        if (quote === null || quote === undefined || quote === '') return null;
+        const src = String(quote).trim();
+
+        if (!src) return null;
+        const normalized = src.replace(/[^\d.]/g, '');
+        if (!normalized) return null;
+
+        const parts = normalized.split('.');
+        if (parts.length > 1 && parts[1] !== '') {
+          const last = parts[1].slice(-1);
+          return last === '' ? null : Number(last);
+        }
+
+        const lastDigit = normalized.slice(-1);
+        return lastDigit === '' ? null : Number(lastDigit);
+      }
+
+      function handleHistoryMessage(msg) {
+        const h = msg.history || {};
+        const prices = Array.isArray(h.prices) ? h.prices : [];
+        const quotes = Array.isArray(h.quotes) ? h.quotes : prices;
+        if (!quotes.length) {
+          state.historyDigits = [];
+          renderDigitTable();
+          return;
+        }
+
+        const digits = [];
+        for (let i = 0; i < quotes.length; i++) {
+          const q = quotes[i];
+          const digit = getDigitFromQuote(q);
+          if (digit !== null) digits.push(digit);
+        }
+
+        state.historyDigits = digits.slice(-state.currentConfig.sampleSize);
+        updateStatsUI();
+        renderDigitTable();
+      }
+
+      function handleTickMessage(msg) {
+        const tick = msg.tick || {};
+        const quote = tick.quote ?? tick.ask ?? tick.bid ?? tick.price ?? null;
+        if (quote === null || quote === undefined || Number.isNaN(Number(quote))) return;
+
+        const qVal = Number(quote);
+        const digit = getDigitFromQuote(qVal);
+
+        if (digit === null) return;
+
+        const now = Date.now();
+        const epoch = tick.epoch || now / 1000;
+        state.lastTick = qVal;
+        state.lastTickEpoch = epoch;
+        state.tickCount += 1;
+        elements.tickCountLabel.textContent = String(state.tickCount);
+
+        const priceStr = Number(qVal).toLocaleString(undefined, { maximumFractionDigits: 4 });
+        elements.latestPriceLabel.textContent = priceStr;
+        elements.latestQuoteValue.textContent = priceStr;
+        elements.lastDigitValue.textContent = String(digit);
+        elements.tickTimeValue.textContent = new Date((epoch || now) * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        elements.tickStatsCount.textContent = String(state.tickCount);
+
+        state.historyDigits.push(digit);
+        if (state.historyDigits.length > state.currentConfig.sampleSize) {
+          state.historyDigits = state.historyDigits.slice(-state.currentConfig.sampleSize);
+        }
+
+        if (state.analysisRunning && !state.paused) {
+          runAnalysisCycle();
+        }
+
+        updateStatsUI();
+      }
+
+      function runAnalysisCycle() {
+        if (!state.selectedSymbol) return;
+
+        const cfg = state.currentConfig;
+        const digits = state.historyDigits.slice(-cfg.sampleSize);
+
+        if (digits.length < cfg.minObservations) {
+          updateSignal('WAIT', 'Not enough observations for a valid signal.');
+          return;
+        }
+
+        const elapsed = state.lastAnalysisTs ? Date.now() - state.lastAnalysisTs : Infinity;
+        if (elapsed < cfg.cooldownMs) return;
+
+        state.lastAnalysisTs = Date.now();
+        state.scanCounter += 1;
+        elements.scanCounter.textContent = String(state.scanCounter);
+        elements.lastScanTime.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        elements.scanSymbol.textContent = state.selectedSymbol;
+        elements.scanSampleCount.textContent = String(digits.length);
+
+        const result = evaluateStrategy(digits);
+        const age = state.lastTickEpoch ? (Date.now() / 1000) - Number(state.lastTickEpoch) : Infinity;
+        const dataFresh = age * 1000 <= cfg.maxAgeMs;
+
+        if (!dataFresh) {
+          setDataStatus('DATA STALE');
+          updateSignal('WAIT', 'Market data is too stale for a valid signal.');
+          return;
+        }
+
+        if (result && result.confidence >= cfg.signalThreshold) {
+          const signalStatus = result.status || 'CANDIDATE SIGNAL';
+          updateSignal(signalStatus, result.reason);
+          announceSignal(result);
+        } else {
+          updateSignal('WAIT', result ? result.reason : 'No qualifying pattern met the configured thresholds.');
+        }
+
+        renderDigitTable();
+        updateHistoryTable();
+        elements.scanProgressBar.style.width = `${Math.min(100, ((state.scanCounter % 10) + 1) * 10)}%`;
+      }
+
+      function evaluateStrategy(digits) {
+        if (!digits.length) return { status: 'WAIT', reason: 'No digit history available.', confidence: 0, candidate: '—', recommended: '—' };
+
+        const cfg = state.currentConfig;
+        const counts = Array.from({ length: 10 }, (_, i) => digits.filter(d => d === i).length);
+        const total = digits.length || 1;
+        const bestDigit = counts.indexOf(Math.max(...counts));
+        const bestCount = counts[bestDigit];
+        const bestPercent = (bestCount / total) * 100;
+
+        const mode = state.currentMode || 'MATCHES';
+        const barrier = Number(elements.digitBarrier.value);
+        let candidate = bestDigit;
+        let recommended = bestDigit;
+        let reason = 'No candidate signal.';
+        let status = 'WAIT';
+        let confidence = Math.min(100, Math.round(bestPercent));
+
+        if (mode === 'MATCHES') {
+          candidate = bestDigit;
+          recommended = bestDigit;
+          reason = `Most frequent digit ${candidate} is present in ${bestPercent.toFixed(1)}% of the sample.`;
+          status = bestPercent >= cfg.signalThreshold ? 'CANDIDATE SIGNAL' : 'WAIT';
+        }
+
+        if (mode === 'DIFFERS') {
+          const minCount = Math.min(...counts);
+          const leastDigit = counts.indexOf(minCount);
+          candidate = leastDigit;
+          recommended = leastDigit;
+          reason = `Least frequent digit ${candidate} appears in ${((minCount / total) * 100).toFixed(1)}% of the sample.`;
+          status = bestPercent >= cfg.signalThreshold ? 'CANDIDATE SIGNAL' : 'WAIT';
+        }
+
+        if (mode === 'OVER') {
+          const above = digits.filter(d => d > barrier).length;
+          const ratio = (above / total) * 100;
+          const freqMap = [];
+          for (let i = barrier + 1; i <= 9; i++) freqMap.push([i, digits.filter(x => x === i).length]);
+          const pick = freqMap.length ? freqMap.reduce((a,b) => (a[1] > b[1] ? a : b), [0, 0])[0] : null;
+          candidate = pick !== null ? pick : barrier;
+          recommended = candidate;
+          reason = `Digits above ${barrier} appear in ${ratio.toFixed(1)}% of the sample.`;
+          status = ratio >= cfg.signalThreshold ? 'CANDIDATE SIGNAL' : 'WAIT';
+          confidence = Math.min(100, Math.round(ratio));
+        }
+
+        if (mode === 'UNDER') {
+          const below = digits.filter(d => d < barrier).length;
+          const ratio = (below / total) * 100;
+          const freqMap = [];
+          for (let i = 0; i < barrier; i++) freqMap.push([i, digits.filter(x => x === i).length]);
+          const pick = freqMap.length ? freqMap.reduce((a,b) => (a[1] > b[1] ? a : b), [0, 0])[0] : null;
+          candidate = pick !== null ? pick : barrier;
+          recommended = candidate;
+          reason = `Digits below ${barrier} appear in ${ratio.toFixed(1)}% of the sample.`;
+          status = ratio >= cfg.signalThreshold ? 'CANDIDATE SIGNAL' : 'WAIT';
+          confidence = Math.min(100, Math.round(ratio));
+        }
+
+        if (mode === 'ODD') {
+          const odd = digits.filter(d => d % 2 === 1).length;
+          const ratio = (odd / total) * 100;
+          candidate = odd > total / 2 ? 1 : 0;
+          recommended = candidate;
+          reason = `Odd digits represent ${ratio.toFixed(1)}% of the observed sample.`;
+          status = ratio >= cfg.signalThreshold ? 'CANDIDATE SIGNAL' : 'WAIT';
+          confidence = Math.min(100, Math.round(ratio));
+        }
+
+        if (mode === 'EVEN') {
+          const even = digits.filter(d => d % 2 === 0).length;
+          const ratio = (even / total) * 100;
+          candidate = even > total / 2 ? 0 : 1;
+          recommended = candidate;
+          reason = `Even digits represent ${ratio.toFixed(1)}% of the observed sample.`;
+          status = ratio >= cfg.signalThreshold ? 'CANDIDATE SIGNAL' : 'WAIT';
+          confidence = Math.min(100, Math.round(ratio));
+        }
+
+        return { status, reason, confidence: Number(confidence || 0), candidate, recommended };
+      }
+
+      function updateSignal(status, reason) {
+        const safeStatus = status || 'WAIT';
+        const statusKey = safeStatus.toLowerCase();
+        elements.signalBadge.textContent = safeStatus;
+        elements.signalBadge.className = 'signal ' + ({
+          'wait': 'wait',
+          'scanning': 'scanning',
+          'candidate signal': 'candidate',
+          'data stale': 'stale',
+          'disconnected': 'disconnected'
+        }[statusKey] || 'wait');
+
+        elements.signalReason.textContent = reason || 'No reason recorded.';
+      }
+
+      function updateStatsUI() {
+        const digits = state.historyDigits.slice(-state.currentConfig.sampleSize);
+        const counts = Array.from({ length: 10 }, (_, index) => digits.filter(d => d === index).length);
+        const total = digits.length || 1;
+
+        elements.sampleSizeValue.textContent = String(digits.length);
+        elements.scanSampleCount.textContent = String(digits.length);
+        elements.selectedMarketLabel.textContent = state.selectedSymbol ? `${state.selectedName || state.selectedSymbol} (${state.selectedSymbol})` : '—';
+
+        const lastDigit = state.historyDigits.length ? state.historyDigits[state.historyDigits.length - 1] : null;
+        elements.lastDigitValue.textContent = lastDigit === null ? '—' : String(lastDigit);
+        elements.predictedDigit.textContent = state.lastSignal && state.lastSignal.candidate ? String(state.lastSignal.candidate) : '—';
+        elements.recommendedDigit.textContent = state.lastSignal && state.lastSignal.recommended ? String(state.lastSignal.recommended) : '—';
+        elements.confidenceValue.textContent = state.lastSignal ? `${state.lastSignal.confidence || 0}%` : '0%';
+
+        renderDigitBars(counts, total);
+        renderDigitTable();
+        renderRecentSequence(digits);
+        elements.marketResult.textContent = state.selectedSymbol || '—';
+        elements.contractResult.textContent = state.currentMode || 'MATCHES';
+      }
+
+      function countDigits(digits) {
+        return Array.from({ length: 10 }, (_, i) => ({
+          digit: i,
+          count: digits.filter(v => v === i).length,
+          pct: digits.length ? ((digits.filter(v => v === i).length / digits.length) * 100) : 0
+        }));
+      }
+
+      function renderDigitBars(counts, total) {
+        const maxCount = Math.max(...counts, 1);
+        elements.digitBars.innerHTML = '';
+
+        counts.forEach((count, index) => {
+          const height = total ? (count / maxCount) * 100 : 0;
+          const bar = document.createElement('div');
+          bar.className = 'bar-wrap';
+          bar.innerHTML = `
+            <div class="bar" style="height:${Math.max(8, height)}%">
+              <span class="value">${count}</span>
+            </div>
+            <div class="label">${index}</div>
+          `;
+          elements.digitBars.appendChild(bar);
+        });
+      }
+
+      function renderDigitTable() {
+        const digits = countDigits(state.historyDigits);
+        const rows = digits.map(item => {
+          const deviation = ((item.pct / 10) - 1) * 100;
+          return `<tr>
+            <td>${item.digit}</td>
+            <td>${item.count}</td>
+            <td>${item.pct.toFixed(1)}%</td>
+            <td>${deviation >= 0 ? '+' : ''}${deviation.toFixed(1)}%</td>
+          </tr>`;
+        }).join('');
+        elements.digitTableBody.innerHTML = rows || '<tr><td colspan="4">No digit data yet.</td></tr>';
+      }
+
+      function renderRecentSequence(digits) {
+        const seq = digits.slice(-30);
+        elements.recentSequenceBox.textContent = seq.length ? seq.join(' • ') : 'No data';
+      }
+
+      function addHistoryEntry(item) {
+        state.historyLog.unshift(item);
+        state.historyLog = state.historyLog.slice(0, 20);
+        updateHistoryTable();
+      }
+
+      function updateHistoryTable() {
+        if (!state.historyLog.length) {
+          elements.historyTableBody.innerHTML = '<tr><td colspan="6">No analysis history yet.</td></tr>';
+          return;
+        }
+
+        elements.historyTableBody.innerHTML = state.historyLog.map(item => `
+          <tr>
+            <td>${new Date(item.ts).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit', second:'2-digit' })}</td>
+            <td>${item.market}</td>
+            <td>${item.mode}</td>
+            <td>${item.candidate}</td>
+            <td>${item.confidence}%</td>
+            <td>${item.status}</td>
+          </tr>
+        `).join('');
+      }
+
+      function exportCsv() {
+        const digits = state.historyDigits.slice(-state.currentConfig.sampleSize);
+        const totals = countDigits(digits);
+        const rows = [
+          ['Digit', 'Count', 'Frequency %', 'Deviation %'],
+          ...totals.map(v => [v.digit, v.count, v.pct.toFixed(1), (((v.pct / 10) - 1) * 100).toFixed(1)])
+        ];
+
+        const csv = rows.map(r => r.join(',')).join('\n');
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `${(state.selectedSymbol || 'analysis')}_digit_stats.csv`;
+        a.click();
+        URL.revokeObjectURL(a.href);
+      }
+
+      function subscribeToSymbol(symbol) {
+        if (!symbol) return;
+        if (!state.connected) return;
+
+        const payload = { ticks: symbol, subscribe: 1 };
+        sendWsRequest(payload);
+
+        state.subscribed = true;
+        setDataStatus('SCANNING');
+        elements.scanSymbol.textContent = symbol;
+      }
+
+      function loadHistoricalTicks(symbol, count) {
+        if (!state.connected) return;
+        const payload = {
+          ticks_history: symbol,
+          count: count || 500,
+          end: 'latest'
+        };
+        sendWsRequest(payload);
+      }
+
+      function startAnalysis() {
+        updateConfigFromInputs();
+
+        if (!state.connected) {
+          connectSocket();
+        }
+
+        if (!state.selectedSymbol) {
+          updateSignal('WAIT', 'Please select a live symbol before starting analysis.');
+          return;
+        }
+
+        state.analysisRunning = true;
+        state.paused = false;
+        setDataStatus('SCANNING');
+        elements.pauseResumeBtn.textContent = 'Pause Analysis';
+        setConnectionStatus('SCANNING');
+
+        if (state.connected) {
+          subscribeToSymbol(state.selectedSymbol);
+        }
+
+        loadHistoricalTicks(state.selectedSymbol, state.currentConfig.sampleSize);
+        runAnalysisCycle();
+      }
+
+      function stopAnalysis() {
+        state.analysisRunning = false;
+        state.paused = false;
+        elements.pauseResumeBtn.textContent = 'Pause Analysis';
+        setDataStatus('WAIT');
+        setConnectionStatus('CONNECTED');
+        updateSignal('WAIT', 'Analysis stopped. Waiting for the next scan cycle.');
+      }
+
+      function togglePauseResume() {
+        state.paused = !state.paused;
+        elements.pauseResumeBtn.textContent = state.paused ? 'Resume Analysis' : 'Pause Analysis';
+
+        if (state.paused) {
+          setDataStatus('WAIT');
+          updateSignal('WAIT', 'Analysis paused.');
+        } else if (state.analysisRunning) {
+          setDataStatus('SCANNING');
+          updateSignal('WAIT', 'Analysis resumed.');
+        }
+      }
+
+      function clearHistory() {
+        state.historyLog = [];
+        state.historyDigits = [];
+        state.tickCount = 0;
+        state.scanCounter = 0;
+        state.lastSignal = null;
+
+        elements.scanCounter.textContent = '0';
+        elements.tickCountLabel.textContent = '0';
+        elements.latestPriceLabel.textContent = '—';
+        elements.latestQuoteValue.textContent = '—';
+        elements.lastDigitValue.textContent = '—';
+        elements.tickStatsCount.textContent = '0';
+        elements.predictedDigit.textContent = '—';
+        elements.recommendedDigit.textContent = '—';
+        elements.confidenceValue.textContent = '0%';
+        elements.signalBadge.textContent = 'WAIT';
+        elements.signalReason.textContent = 'History cleared. Waiting for fresh data...';
+
+        updateHistoryTable();
+        renderDigitTable();
+        renderDigitBars(Array(10).fill(0), 1);
+        renderRecentSequence([]);
+      }
+
+      function maybeNotify(title, body) {
+        if (!state.currentConfig.notifications) return;
+        if ('Notification' in window && Notification.permission === 'granted') {
+          new Notification(title, { body });
+        }
+      }
+
+      function playTone() {
+        if (!state.currentConfig.sound) return;
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        const ctx = new AudioCtx();
+        const oscillator = ctx.createOscillator();
+        const gain = ctx.createGain();
+        oscillator.type = 'triangle';
+        oscillator.frequency.value = 740;
+        gain.gain.value = 0.05;
+        oscillator.connect(gain);
+        gain.connect(ctx.destination);
+        oscillator.start();
+        setTimeout(() => {
+          oscillator.stop();
+          ctx.close();
+        }, 120);
+      }
+
+      function announceSignal(result) {
+        if (!result || !result.candidate) return;
+
+        const message = `Candidate digit ${result.candidate} (${result.confidence}% confidence) on ${state.selectedSymbol}`;
+        maybeNotify('Currency Pulse Pro', message);
+        playTone();
+
+        state.lastSignal = result;
+        elements.predictedDigit.textContent = String(result.candidate);
+        elements.recommendedDigit.textContent = String(result.recommended);
+        elements.confidenceValue.textContent = `${result.confidence || 0}%`;
+        addHistoryEntry({
+          ts: Date.now(),
+          market: state.selectedSymbol || '—',
+          mode: state.currentMode || 'MATCHES',
+          candidate: String(result.candidate),
+          confidence: result.confidence || 0,
+          status: result.status || 'CANDIDATE SIGNAL'
+        });
+      }
+
+      function bindEvents() {
+        elements.marketSearch.addEventListener('input', renderMarketList);
+        elements.analysisMode.addEventListener('change', () => {
+          state.currentMode = elements.analysisMode.value;
+          elements.scanMode.textContent = state.currentMode;
+          if (state.analysisRunning) runAnalysisCycle();
+        });
+        elements.sampleSize.addEventListener('change', () => {
+          updateConfigFromInputs();
+          if (state.selectedSymbol) loadHistoricalTicks(state.selectedSymbol, state.currentConfig.sampleSize);
+        });
+        elements.signalThreshold.addEventListener('input', updateConfigFromInputs);
+        elements.deviationThreshold.addEventListener('input', updateConfigFromInputs);
+        elements.maxAgeMs.addEventListener('input', updateConfigFromInputs);
+        elements.cooldownMs.addEventListener('input', updateConfigFromInputs);
+        elements.notificationsToggle.addEventListener('change', updateConfigFromInputs);
+        elements.soundToggle.addEventListener('change', updateConfigFromInputs);
+        elements.digitBarrier.addEventListener('input', updateConfigFromInputs);
+
+        elements.connectBtn.addEventListener('click', connectSocket);
+        elements.refreshBtn.addEventListener('click', () => {
+          refreshMarkets();
+          if (state.selectedSymbol) loadHistoricalTicks(state.selectedSymbol, state.currentConfig.sampleSize);
+        });
+        elements.refreshSymbolBtn.addEventListener('click', () => {
+          refreshMarkets();
+          if (state.selectedSymbol) loadHistoricalTicks(state.selectedSymbol, state.currentConfig.sampleSize);
+        });
+        elements.startBtn.addEventListener('click', startAnalysis);
+        elements.stopBtn.addEventListener('click', stopAnalysis);
+        elements.csvBtn.addEventListener('click', exportCsv);
+        elements.clearHistoryBtn.addEventListener('click', clearHistory);
+        elements.pauseResumeBtn.addEventListener('click', togglePauseResume);
+
+        if ('Notification' in window && Notification.permission === 'default') {
+          Notification.requestPermission().catch(() => {});
+        }
+      }
+
+      function initialize() {
+        bindEvents();
+        updateConfigFromInputs();
+        setConnectionStatus('DISCONNECTED');
+        setDataStatus('WAIT');
+        elements.scanMode.textContent = state.currentMode;
+        renderDigitBars(Array(10).fill(0), 1);
+        updateHistoryTable();
+        connectSocket();
+      }
+
+      initialize();
+    })();
+  </script>
+</body>
+</html>
